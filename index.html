@@ -1,27 +1,342 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Site</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Poster + Pop</title>
+  <meta name="description" content="A single-screen poster site with pop-up sections." />
   <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      font-family: sans-serif;
-      background: linear-gradient(135deg, #111, #333);
-      color: white;
+    :root{
+      --bg1:#0e0f12;
+      --bg2:#15171d;
+      --ink:#e6e7ea;
+      --muted:#a5abb6;
+      --accent:#8ee3ff;
+      --accent-2:#c7f36b;
+      --glass:rgba(255,255,255,.06);
+      --blur:14px;
+      --radius:22px;
+      --ease:cubic-bezier(.22,.61,.36,1);
+      --shadow:0 10px 30px rgba(0,0,0,.35);
     }
-    h1 {
-      font-size: 2rem;
-      text-align: center;
+
+    /* Base canvas */
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial;
+      color:var(--ink);
+      background: radial-gradient(1200px 800px at 15% 10%, #1d212b 0%, transparent 60%),
+                  radial-gradient(900px 700px at 85% 80%, #1a2027 0%, transparent 65%),
+                  linear-gradient(160deg,var(--bg1),var(--bg2));
+      overflow:hidden;
+    }
+
+    /* Subtle noise texture */
+    .grain:before{
+      content:"";
+      position:fixed; inset:0;
+      background: url("data:image/svg+xml;utf8,\
+      <svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'>\
+      <filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncA type='table' tableValues='0 0 .03 0'/></feComponentTransfer></filter>\
+      <rect width='100%' height='100%' filter='url(%23n)'/>\
+      </svg>") repeat;
+      mix-blend-mode:soft-light;
+      opacity:.70;
+      pointer-events:none;
+    }
+
+    /* Centered poster */
+    .poster{
+      position:fixed; inset:0;
+      display:grid; place-items:center;
+      padding:28px;
+    }
+
+    .frame{
+      position:relative;
+      width:min(1100px,92vw);
+      height:min(620px,78vh);
+      border-radius:32px;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(var(--blur));
+      border:1px solid rgba(255,255,255,.08);
+    }
+
+    /* Headline */
+    .title{
+      position:absolute; left:36px; top:28px;
+      font-weight:600; letter-spacing:.2px;
+      font-size: clamp(20px, 3vw, 28px);
+      color:var(--ink);
+    }
+    .subtitle{
+      position:absolute; left:36px; top:64px;
+      color:var(--muted);
+      font-size: clamp(13px, 1.6vw, 15px);
+    }
+
+    /* Hotspots */
+    .hotspots{position:absolute; inset:0}
+    .spot{
+      position:absolute;
+      width:140px; height:140px;
+      display:grid; place-items:center;
+      border-radius:24px;
+      background: var(--glass);
+      border:1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(var(--blur));
+      cursor:pointer;
+      transition: transform .28s var(--ease), background .28s var(--ease), box-shadow .28s var(--ease);
+      box-shadow: 0 10px 26px rgba(0,0,0,.28);
+      user-select:none;
+    }
+    .spot:hover{ transform: translateY(-4px) scale(1.02); background: rgba(255,255,255,.10) }
+
+    .spot-label{
+      font-size:14px; letter-spacing:.4px; color:var(--ink);
+      text-transform:uppercase;
+    }
+
+    /* Simple SVG icons (drop in your own later) */
+    .icon{ width:48px; height:48px; margin-bottom:10px; opacity:.92 }
+    .icon path{ stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round }
+
+    /* Floating animation */
+    @keyframes floaty{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .float-1{ animation:floaty 6s var(--ease) infinite }
+    .float-2{ animation:floaty 7.5s var(--ease) infinite }
+    .float-3{ animation:floaty 5.5s var(--ease) infinite }
+
+    /* Place the spots (tweak as you like) */
+    .about { left:60px; bottom:60px }
+    .projects { right:60px; bottom:90px }
+    .contact { right:120px; top:80px }
+
+    /* Accent rings */
+    .ring{
+      position:absolute; inset:-2px;
+      border-radius:inherit;
+      pointer-events:none;
+      background:
+        radial-gradient(220px 120px at 30% 20%, rgba(142,227,255,.25), transparent 60%),
+        radial-gradient(220px 120px at 70% 80%, rgba(199,243,107,.18), transparent 60%);
+    }
+
+    /* Modal base */
+    .modal{
+      position:fixed; inset:0; display:grid; place-items:center;
+      background: rgba(0,0,0,.55);
+      opacity:0; pointer-events:none;
+      transition: opacity .32s var(--ease);
+    }
+    .modal[aria-hidden="false"]{ opacity:1; pointer-events:auto }
+
+    .sheet{
+      width:min(720px,92vw);
+      max-height:min(82vh,900px);
+      overflow:auto;
+      background:#0f1218;
+      color:var(--ink);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      border:1px solid rgba(255,255,255,.10);
+      transform: translateY(12px) scale(.98);
+      transition: transform .35s var(--ease);
+    }
+    .modal[aria-hidden="false"] .sheet{ transform: translateY(0) scale(1) }
+
+    .sheet header{
+      position:sticky; top:0; z-index:2;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:18px 20px;
+      background: linear-gradient(180deg, rgba(20,22,28,.9), rgba(20,22,28,.75));
+      border-bottom:1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(8px);
+    }
+    .close{
+      appearance:none; border:0; cursor:pointer;
+      padding:8px 12px; border-radius:12px; color:var(--ink);
+      background: rgba(255,255,255,.08);
+    }
+    .sheet main{ padding:24px 22px 30px }
+
+    /* Cards inside modals */
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:16px;
+      margin-top:14px;
+    }
+    .card{
+      padding:16px; border-radius:16px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+    }
+    .muted{ color:var(--muted) }
+
+    /* Accessibility: reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .spot,.modal,.sheet{ transition:none }
+      .float-1,.float-2,.float-3{ animation:none }
+    }
+
+    /* Mobile tweaks */
+    @media (max-width:640px){
+      .spot{ width:120px; height:120px; border-radius:20px }
+      .about{ left:20px; bottom:24px }
+      .projects{ right:18px; bottom:34px }
+      .contact{ right:24px; top:24px }
     }
   </style>
 </head>
-<body>
-  <h1>Hello, GitHub Pages is working!</h1>
+<body class="grain">
+  <div class="poster">
+    <div class="frame" role="region" aria-label="Poster">
+      <div class="title">Elio</div>
+      <div class="subtitle">Web experiences built like art. Click a tile.</div>
+
+      <div class="hotspots">
+        <!-- ABOUT -->
+        <button class="spot about float-1" data-modal="aboutModal" aria-label="Open About">
+          <div class="ring"></div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v4M8 12h8M5 21h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2Z" stroke="white" />
+          </svg>
+          <div class="spot-label">About</div>
+        </button>
+
+        <!-- PROJECTS -->
+        <button class="spot projects float-2" data-modal="projectsModal" aria-label="Open Projects">
+          <div class="ring"></div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M4 7h16M4 12h16M4 17h10" stroke="white"/>
+          </svg>
+          <div class="spot-label">Projects</div>
+        </button>
+
+        <!-- CONTACT -->
+        <button class="spot contact float-3" data-modal="contactModal" aria-label="Open Contact">
+          <div class="ring"></div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none">
+            <path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8m18 0-8 5-8-5" stroke="white"/>
+          </svg>
+          <div class="spot-label">Contact</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT MODAL -->
+  <section class="modal" id="aboutModal" aria-hidden="true" aria-labelledby="aboutTitle" role="dialog">
+    <div class="sheet" role="document">
+      <header>
+        <strong id="aboutTitle">About</strong>
+        <button class="close" data-close>Close</button>
+      </header>
+      <main>
+        <p class="muted">Drop your graphic, logo or hero illustration here later. This section replaces scrolling with a focused card.</p>
+        <div class="cards">
+          <div class="card">
+            <h3>Philosophy</h3>
+            <p class="muted">Poster canvas for the vibe. Pop-up sheets for the details. Fast, playful, no page reloads.</p>
+          </div>
+          <div class="card">
+            <h3>Stack</h3>
+            <p class="muted">HTML, CSS and a sprinkle of JS. Replace these with your assets or embed a video.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- PROJECTS MODAL -->
+  <section class="modal" id="projectsModal" aria-hidden="true" aria-labelledby="projectsTitle" role="dialog">
+    <div class="sheet" role="document">
+      <header>
+        <strong id="projectsTitle">Projects</strong>
+        <button class="close" data-close>Close</button>
+      </header>
+      <main>
+        <div class="cards">
+          <div class="card">
+            <h3>Natrul</h3>
+            <p class="muted">Premium cork store. Apple energy. Add a screenshot here later.</p>
+          </div>
+          <div class="card">
+            <h3>Elio</h3>
+            <p class="muted">Instant sites built like posters. Embed a demo or GIF.</p>
+          </div>
+          <div class="card">
+            <h3>Leo</h3>
+            <p class="muted">Pre-built trade sites. Swap this card for a visual grid.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- CONTACT MODAL -->
+  <section class="modal" id="contactModal" aria-hidden="true" aria-labelledby="contactTitle" role="dialog">
+    <div class="sheet" role="document">
+      <header>
+        <strong id="contactTitle">Contact</strong>
+        <button class="close" data-close>Close</button>
+      </header>
+      <main>
+        <p class="muted">Swap this for a form, a QR code or your email. Keep it light.</p>
+        <div class="cards">
+          <div class="card">
+            <h3>Email</h3>
+            <p class="muted"><a href="mailto:hello@example.com" style="color:#8ee3ff">hello@example.com</a></p>
+          </div>
+          <div class="card">
+            <h3>LinkedIn</h3>
+            <p class="muted"><a href="#" style="color:#8ee3ff">/in/your-handle</a></p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <script>
+    // Open modals
+    document.querySelectorAll('.spot').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const id = btn.getAttribute('data-modal');
+        const m = document.getElementById(id);
+        if(!m) return;
+        m.setAttribute('aria-hidden','false');
+        // focus trap entry
+        const closeBtn = m.querySelector('[data-close]');
+        closeBtn && closeBtn.focus();
+      });
+    });
+
+    // Close handlers (button, overlay, ESC)
+    function closeModal(modal){
+      modal.setAttribute('aria-hidden','true');
+    }
+
+    document.querySelectorAll('.modal').forEach(m=>{
+      // overlay click
+      m.addEventListener('click', e=>{
+        if(e.target === m) closeModal(m);
+      });
+      // close buttons
+      m.querySelectorAll('[data-close]').forEach(b=>{
+        b.addEventListener('click', ()=> closeModal(m));
+      });
+    });
+
+    // ESC
+    window.addEventListener('keydown', e=>{
+      if(e.key === 'Escape'){
+        document.querySelectorAll('.modal[aria-hidden="false"]').forEach(closeModal);
+      }
+    });
+  </script>
 </body>
 </html>
