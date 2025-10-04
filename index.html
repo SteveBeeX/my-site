@@ -298,4 +298,62 @@ function buildCopy(topic){
     title:'Beautiful sites for ' + capitaliseWords(topic || 'your business'),
     copy:'Clean design, fast load, clear story. Elio presents what you do with calm focus and modern flow.',
     c1h:'Show your work', c1p:'Gallery ready sections present your best moments with care and space.',
-    c2h:'Clear call to action', c2p:'
+    c2h:'Clear call to action', c2p:'Simple buttons that invite action without noise. It keeps attention on you.',
+    c3h:'Fast and stable', c3p:'Static by default. CDN fast. No updates to chase. Just publish and focus on the work.',
+    alt:'View a sample' };
+}
+
+function setLiveStep(ix){ steps.forEach((s,i)=> s.classList.toggle('live', i===ix)); }
+function revealCards(){ cards.forEach((c,i)=> setTimeout(()=> c.classList.add('show'), 180*i+120)); }
+
+function runBuild(){
+  const topic = biz.value.trim() || 'your business';
+  const data = buildCopy(topic);
+
+  timeline.style.visibility = 'visible';
+  [0,1,2,3,4].forEach((i)=> setTimeout(()=> setLiveStep(i), 500 + i*650));
+
+  setTimeout(()=>{
+    brand.textContent = data.brand;
+    footbrand.textContent = data.brand;
+    kicker.textContent = data.kicker;
+    qs('#title').innerHTML = data.title;
+    titleTopic.textContent = capitaliseWords(topic);
+    copy.textContent = data.copy;
+    alt.textContent = data.alt;
+    c1h.textContent = data.c1h; c1p.textContent = data.c1p;
+    c2h.textContent = data.c2h; c2p.textContent = data.c2p;
+    c3h.textContent = data.c3h; c3p.textContent = data.c3p;
+  }, 2400);
+
+  setTimeout(()=>{
+    stage.classList.add('show');
+    site.classList.add('show');
+    revealCards();
+    note.classList.remove('hide');
+  }, 3000);
+}
+
+go.addEventListener('click', ()=>{
+  site.classList.remove('show');
+  stage.classList.remove('show');
+  cards.forEach(c=> c.classList.remove('show'));
+  runBuild();
+});
+
+biz.addEventListener('keydown', e=>{ if(e.key==='Enter'){ go.click(); } });
+
+window.addEventListener('keydown', e=>{
+  if(e.key.toLowerCase()==='r'){
+    timeline.style.visibility='hidden';
+    steps.forEach(s=> s.classList.remove('live'));
+    stage.classList.remove('show');
+    site.classList.remove('show');
+    cards.forEach(c=> c.classList.remove('show'));
+    note.classList.add('hide');
+    biz.focus();
+  }
+});
+</script>
+</body>
+</html>
