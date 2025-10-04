@@ -1,148 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Elio — Instant Site Demo</title>
 <style>
-  body {
-    font-family: sans-serif;
-    background:#f4f6f9;
-    margin:0;
-    padding:40px;
-    color:#222;
-    overflow-x:hidden;
+  :root{
+    --ink:#0b0b0c; --muted:#6b7280; --line:#e5e7eb; --bg:#f7f7f8;
   }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial;padding:48px}
+  .panel{max-width:760px;margin:0 auto 40px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px 24px;box-shadow:0 10px 30px rgba(0,0,0,.06)}
+  .panel h1{margin:0 0 8px;font-size: clamp(28px,4vw,40px);letter-spacing:.2px}
+  .panel p{margin:0 0 16px;color:var(--muted)}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input{flex:1 1 420px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;font-size:16px}
+  button{padding:14px 18px;border:1px solid #0ea5e9;background:#0ea5e9;color:#fff;border-radius:12px;font-weight:600;cursor:pointer}
+  button:hover{filter:brightness(1.05)}
 
-  .panel {
-    max-width:600px;
-    margin:0 auto;
-    background:#fff;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 4px 12px rgba(0,0,0,.08);
-    text-align:center;
-  }
-  input {
-    width:70%;
-    padding:10px;
-    border:1px solid #ccc;
-    border-radius:8px;
-  }
-  button {
-    padding:10px 16px;
-    margin-left:6px;
-    border:none;
-    border-radius:8px;
-    background:#4dd0e1;
-    color:#fff;
-    font-weight:bold;
-    cursor:pointer;
-  }
+  /* Overlay pop */
+  .overlay{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;
+           background:rgba(10,10,12,.55);backdrop-filter:blur(6px);opacity:0;pointer-events:none;
+           transition:opacity .35s ease;z-index:20}
+  .overlay.show{opacity:1;pointer-events:auto}
+  .site{width:min(980px,92vw);background:#fff;border:1px solid var(--line);border-radius:20px;
+        box-shadow:0 20px 60px rgba(0,0,0,.18);padding:34px 28px;transform:translateY(10px) scale(.985);
+        transition:transform .35s ease}
+  .overlay.show .site{transform:translateY(0) scale(1)}
+  .close{position:absolute;top:24px;right:28px;font-size:30px;line-height:1;background:transparent;border:0;color:#fff;cursor:pointer}
 
-  /* Popup overlay */
-  .overlay {
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.75);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .4s ease;
-    z-index:10;
-  }
-  .overlay.show {
-    opacity:1;
-    pointer-events:auto;
-  }
+  .hero h2{margin:0 0 8px;font-size: clamp(26px,3.6vw,36px);letter-spacing:.2px}
+  .hero p{margin:0 0 16px;color:var(--muted);font-size:17px}
+  .hero img{width:100%;height:auto;border-radius:16px;border:1px solid var(--line);margin-top:12px}
 
-  .site {
-    background:#fff;
-    border-radius:16px;
-    padding:30px;
-    max-width:900px;
-    width:92%;
-    box-shadow:0 10px 30px rgba(0,0,0,.2);
-    transform:scale(.95);
-    transition:transform .4s ease;
-  }
-  .overlay.show .site {
-    transform:scale(1);
-  }
-  .close {
-    position:absolute;
-    top:30px;
-    right:40px;
-    background:none;
-    border:none;
-    font-size:30px;
-    color:#fff;
-    cursor:pointer;
-  }
-
-  .site img { max-width:100%; border-radius:10px; margin-top:16px; }
-  .features { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
-  .features div { flex:1 1 30%; background:#f9f9f9; padding:12px; border-radius:8px; min-width:200px; text-align:center; }
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:18px}
+  .feat{border:1px solid var(--line);border-radius:14px;padding:14px 12px;background:#fafafa}
 </style>
 </head>
 <body>
 
-<div class="panel">
-  <h1>Elio — Instant Site Demo</h1>
-  <p>Type your business and watch a site appear instantly.</p>
-  <input id="biz" placeholder="e.g. Pizza Shop, Yoga Studio, Flooring">
-  <button onclick="makeSite()">Make it</button>
-</div>
-
-<div class="overlay" id="overlay">
-  <button class="close" onclick="closeOverlay()">×</button>
-  <div class="site" id="site">
-    <h2 id="headline"></h2>
-    <p id="copy"></p>
-    <img id="heroImage" src="" alt="">
-    <div class="features">
-      <div id="f1"></div>
-      <div id="f2"></div>
-      <div id="f3"></div>
+  <div class="panel">
+    <h1>Elio — Instant Site Demo</h1>
+    <p>Type a business and see a clean preview. Minimal layout, modern font, calm spacing.</p>
+    <div class="row">
+      <input id="biz" placeholder="e.g. Pizza Shop, Yoga Studio, Eco Flooring" />
+      <button id="go">Make it</button>
     </div>
   </div>
-</div>
+
+  <!-- Poster-style popup -->
+  <div class="overlay" id="overlay">
+    <button class="close" id="closeBtn" aria-label="Close">×</button>
+    <div class="site">
+      <section class="hero">
+        <h2 id="headline"></h2>
+        <p id="tagline"></p>
+        <img id="heroImage" alt="" referrerpolicy="no-referrer">
+        <div class="features">
+          <div class="feat" id="f1"></div>
+          <div class="feat" id="f2"></div>
+          <div class="feat" id="f3"></div>
+        </div>
+      </section>
+    </div>
+  </div>
 
 <script>
-function capitaliseWords(str){
-  return str.replace(/\s+/g," ").trim()
-    .split(" ").map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(" ");
-}
+  const $ = s => document.querySelector(s);
+  const bizInput = $('#biz'), goBtn = $('#go'), overlay = $('#overlay'), closeBtn = $('#closeBtn');
 
-function makeSite(){
-  const biz = document.getElementById("biz").value.trim() || "Your Business";
-  const brand = capitaliseWords(biz);
-  const headline = document.getElementById("headline");
-  const copy = document.getElementById("copy");
-  const hero = document.getElementById("heroImage");
-  const overlay = document.getElementById("overlay");
+  function titleCase(s){return s.replace(/\s+/g,' ').trim().split(' ').map(w=>w? w[0].toUpperCase()+w.slice(1):'').join(' ')}
 
-  headline.textContent = "Welcome to " + brand;
-  copy.textContent = `We help people with ${biz.toLowerCase()}, offering clear value and trusted service.`;
+  // robust image loader: Unsplash featured → LoremFlickr → Picsum seed → SVG fallback
+  async function loadHeroImage(keyword){
+    const hero = $('#heroImage');
+    const trySrc = async (src) => new Promise(resolve=>{
+      hero.onload = () => resolve(true);
+      hero.onerror = () => resolve(false);
+      hero.src = src;
+    });
 
-  // Unsplash image fix: "featured" avoids blocks
-  hero.src = `https://source.unsplash.com/featured/1000x600/?${encodeURIComponent(biz)}`;
-  hero.alt = brand;
-  hero.onerror = () => hero.src = "https://source.unsplash.com/featured/1000x600/?nature";
+    const k = encodeURIComponent(keyword);
+    const sig = Date.now()%1000; // cache buster
 
-  document.getElementById("f1").textContent = "✔ Clear design for " + brand;
-  document.getElementById("f2").textContent = "✔ Fast, mobile-ready pages";
-  document.getElementById("f3").textContent = "✔ Easy contact and booking";
+    const chain = [
+      `https://source.unsplash.com/featured/1200x750/?${k}&sig=${sig}`,
+      `https://loremflickr.com/1200/750/${k}?lock=${sig}`,
+      `https://picsum.photos/seed/${k}-${sig}/1200/750`
+    ];
 
-  overlay.classList.add("show");
-}
+    for(const url of chain){
+      const ok = await trySrc(url);
+      if(ok) return;
+    }
+    // final SVG fallback
+    const svg = encodeURIComponent(
+      `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='750'>
+        <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+          <stop offset='0%' stop-color='#eef2f7'/><stop offset='100%' stop-color='#dce5f4'/></linearGradient></defs>
+        <rect width='1200' height='750' fill='url(#g)'/>
+        <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle'
+              font-family='-apple-system,BlinkMacSystemFont,Segoe UI,system-ui' font-size='38'
+              fill='#667085'>${titleCase(keyword)}</text>
+      </svg>`
+    );
+    hero.src = `data:image/svg+xml;charset=utf-8,${svg}`;
+  }
 
-function closeOverlay(){
-  document.getElementById("overlay").classList.remove("show");
-}
+  function makeSite(){
+    const raw = bizInput.value.trim() || 'Your Business';
+    const brand = titleCase(raw);
+
+    $('#headline').textContent = `Welcome to ${brand}`;
+    $('#tagline').textContent  = `We help people with ${raw.toLowerCase()} using clear design and honest service.`;
+
+    $('#f1').textContent = `Clear, modern layout for ${brand}`;
+    $('#f2').textContent = `Fast and friendly on mobile`;
+    $('#f3').textContent = `Simple contact and booking`;
+
+    loadHeroImage(raw);
+    overlay.classList.add('show');
+  }
+
+  function closeOverlay(){ overlay.classList.remove('show') }
+
+  goBtn.addEventListener('click', makeSite);
+  bizInput.addEventListener('keydown', e => { if(e.key==='Enter') makeSite() });
+  closeBtn.addEventListener('click', closeOverlay);
+  window.addEventListener('keydown', e => { if(e.key==='Escape') closeOverlay() });
 </script>
-
 </body>
 </html>
